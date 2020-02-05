@@ -1,0 +1,151 @@
+---
+title: "Modelos de IA e ML"
+author: "Andre L S Rodrigues"
+subtitle: Trabalho 8 - K-Means
+output:
+   html_document:
+      toc: yes
+      theme: cosmo
+      highlight: tango
+      # code_folding: hide
+      fig_width: 12
+      fig_height: 8
+# runtime: shiny
+params:
+  d: !r Sys.Date()
+---
+
+![](https://i.ibb.co/mXvdH3h/Fiap-logo-novo.jpg){ width=20% }
+
+##### Today's date is `r params$d`
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+                      # fig.width=12, 
+                      # fig.height=8, 
+                      echo = TRUE, 
+                      error = TRUE, 
+                      warning=FALSE, 
+                      message=FALSE
+                      )
+rm(list = ls())
+# if (!require (c("ggplot2", "plotly", "stringi", "stargazer","reticulate", "FactoMineR", "factoextra"))) install.packages(c("ggplot2", "plotly", "stringi", "stargazer","reticulate"), dependencies = TRUE )
+library(plotly)
+library(stargazer)
+library(reticulate)
+# reticulate::py_config()
+
+use_python("/Users/andrerodrigues/opt/anaconda3/bin/python") # Digite "which python" no seu terminal para determinar o caminho do python no seu computador
+
+```
+
+
+## K-Means 
+
+```{r}
+library(FactoMineR)
+library(factoextra)
+```
+
+* Nesse algoritmo, k agrupamentos s??o representados como um conjunto de vetores chamados ???prot??tipos???. Cada vetor prot??tipo sempre esta associado a representa????o de um grupo do conjunto de dados.
+
+![](https://i.ibb.co/nwFPfxm/kmeans.png) { width=25% }
+
+* Vantagens:
+
+ + Implementacao simplificada;
+
+ + Facilidade em lidar com qualquer medida de similaridade e por consequencia, qualquer tipo de atributo.
+
+* Desvantagens:
+
+ + Dificuldade na definicao do valor de k;
+
+ + Suscetivel a outliers e a ausencia de normalizacao.
+
+
+
+```{r lendo_dados}
+dados_k <- read.csv(file = "/Users/andrerodrigues/Google Drive/FIAP-MBA 8IA/006 - Modelos de IA e ML/Trabalho_Final_2/Exercicio8_v2/data_nostd_v2.csv", header = TRUE, sep = ",")
+View(dados_k)
+```
+
+```{r normalizando}
+dados_k.scale <- scale(subset(dados_k, select = c(2:11)))
+View(dados_k.scale)
+```
+
+1. Executa o algoritmo k-means:
+```{r kmeans1}
+kc <- kmeans(dados_k.scale, 5, nstart = 25)
+View(kc)
+```
+
+
+* O programa retorna a informacao de que os dados se agrupam em 5 clusters:
+```{r kmeans1_size}
+kc[["size"]]
+```
+
+
+* Tambem retorna as coordenadas das 5 medias de cluster:
+```{r kmeans1_centers}
+kc[["centers"]]
+```
+
+
+* Um vetor chamado cluster indicando como cada ponto foi alocado nos clusters
+```{r kmeans1_cluster ,results = "hide"}
+kc[["cluster"]]
+```
+
+* A soma dos quadrados dentro de cada grupo.
+```{r kmeans1_whithinss}
+kc[["withinss"]]
+```
+
+* Tambem mostra todos os componentes disponiveis retornados pela funcao.
+
+* Para ver quantas itera????es o algoritmo passou, chamamos kc$iter:
+```{r kmeans1_iter}
+kc$iter
+```
+* Vamos tracar a cor dos pontos de acordo com o cluster deles. Isso foi armazenado em kc$cluster
+
+```{r kmeans1_plot1}
+plot(x=dados_k.scale, col = kc$cluster, pch = 19, cex = .2)
+points(kc$centers
+       , col=c("blue","purple","orange","red","green")
+       , pch = 8
+       , cex = 3
+       , lwd = 5)
+```
+
+2. Faz a projecao dos dados utilizando as duas primeira dimensoes do PCA
+```{r fviz_cluster}
+fviz_cluster(kc, data = dados_k.scale)
+```
+
+
+```{r wss}
+k.max <- 40
+wss <- sapply(1:k.max, 
+              function(k){kmeans(dados_k.scale, k, nstart=25, iter.max = 50 )$tot.withinss})
+```
+
+
+```{r kmeans1_plot2}
+plot(1:k.max, wss,
+     type="b", pch = 19, frame = FALSE, 
+     xlab="Numero de clusters K",
+     ylab="Soma total da diferenca dos quadrados internos dos clusters")
+```
+
+
+```{r}
+dados_clust <- read.csv(file = "/Users/andrerodrigues/Google Drive/FIAP-MBA 8IA/006 - Modelos de IA e ML/Trabalho_Final_2/Exercicio8_v2/dados_clust_v2.csv", header = TRUE, sep = ",")
+dados_clust$kmeans <- kc$cluster
+View(dados_clust)
+write.csv(dados_clust,"/Users/andrerodrigues/Google Drive/FIAP-MBA 8IA/006 - Modelos de IA e ML/Trabalho_Final_2/Exercicio8_v2/dados_clust_v2.csv", row.names=FALSE)
+```
+

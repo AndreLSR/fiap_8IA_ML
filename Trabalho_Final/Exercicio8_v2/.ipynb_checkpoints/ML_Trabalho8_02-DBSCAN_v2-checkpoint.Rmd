@@ -1,0 +1,110 @@
+---
+title: "Modelos de IA e ML"
+author: "Andre L S Rodrigues"
+subtitle: Trabalho 8 - DBSCAN
+output:
+   html_document:
+      toc: yes
+      theme: cosmo
+      highlight: tango
+      # code_folding: hide
+      fig_width: 12
+      fig_height: 10
+# runtime: shiny
+params:
+  d: !r Sys.Date()
+---
+
+![](https://i.ibb.co/mXvdH3h/Fiap-logo-novo.jpg){ width=20% }
+
+##### Today's date is `r params$d`
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+                      # fig.width=12, 
+                      # fig.height=8, 
+                      echo = TRUE, 
+                      error = TRUE, 
+                      warning=FALSE, 
+                      message=FALSE
+                      )
+rm(list = ls())
+# install.packages(c("ggplot2", "plotly", "stringi"),dep=TRUE )
+library(plotly)
+library(stargazer)
+library(reticulate)
+# reticulate::py_config()
+
+use_python("/Users/andrerodrigues/opt/anaconda3/bin/python") # Digite "which python" no seu terminal para determinar o caminho do python no seu computador
+```
+
+
+## DBSCAN
+
+* Muito ??til em conjunto de dados com grande numero de exemplares.
+* Princ??pio: o processo executado no algoritmo encontra" regi??es com densidade suficientemente alta para descobrir os clusters, considerando um conjunto de dados ???com ru??do". Neste algoritmo, um cluster e definido como o um conjunto m??ximo de density-connected points.
+
+![](https://i.ibb.co/tZWxrrq/DBSCAN.png){ width=35% }
+
+* Vantagens:
+
+ + Capacidade de trabalhar com outliers.
+
+ + Trabalha com grandes volumes de dados
+
+* Desvantagens:
+
+ + Dificuldade na clusteriza????o de clusters conc??ntricos  (um cluster dentro do outro)
+
+ + Conjuntos de dados cuja a distancia m??dia entre das amostras sejam muito distintas entre clusters (clusters mais densos que outros) o DBSCAN pode encontrar dificuldades em fun????o do raio de vizinhan??a (eps).
+
+
+```{r}
+library(FactoMineR)
+library(factoextra)
+library(dbscan)
+```
+
+```{r}
+dados <- read.csv(file = "/Users/andrerodrigues/Google Drive/FIAP-MBA 8IA/006 - Modelos de IA e ML/Trabalho_Final_2/Exercicio8_v2/data_nostd_v2.csv", header = TRUE, sep = ",")
+View(dados)
+```
+
+```{r}
+dados.scale <- scale(subset(dados, select = c(2:11)))
+View(dados.scale)
+```
+
+
+1. Carrega as bibliotecas fpc e factoextra
+```{r}
+set.seed(123)
+```
+
+2. Executa o dbscan com um raio de vizinhanca igual a 1 e MinPts igual a 12
+
+```{r}
+res <- dbscan(dados.scale, eps = 1, MinPts = 12)
+View(res)
+```
+
+
+3. Utiliza a funcao fviz_cluster (que faz um PCA internamente) para a visualizacao dos dados.
+```{r}
+fviz_cluster(res, dados.scale, geom = "point")
+```
+
+
+4. Exibe o cluster definido para cada amostra de acordo com seu indice. As amostras cujo o cluster for igual a 0, sao considerados outliers
+```{r}
+print(res["cluster"])
+```
+
+
+```{r}
+dados2 <- dados
+dados2$dbscan <- res$cluster
+View(dados2)
+write.csv(dados2,"/Users/andrerodrigues/Google Drive/FIAP-MBA 8IA/006 - Modelos de IA e ML/Trabalho_Final_2/Exercicio8_v2/dados_clust_v2.csv", row.names=FALSE)
+
+```

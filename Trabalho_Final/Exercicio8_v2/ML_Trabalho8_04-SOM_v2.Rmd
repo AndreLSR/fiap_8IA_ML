@@ -1,0 +1,183 @@
+---
+title: "Modelos de IA e ML"
+author: "Andre L S Rodrigues"
+subtitle: Trabalho 8 - SOM
+output:
+   html_document:
+      toc: yes
+      theme: cosmo
+      highlight: tango
+      # code_folding: hide
+      fig_width: 12
+      fig_height: 8
+# runtime: shiny
+params:
+  d: !r Sys.Date()
+---
+
+![](https://i.ibb.co/mXvdH3h/Fiap-logo-novo.jpg){ width=20% }
+
+##### Today's date is `r params$d`
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+                      # fig.width=12, 
+                      # fig.height=8, 
+                      echo = TRUE, 
+                      error = TRUE, 
+                      warning=FALSE, 
+                      message=FALSE
+                      )
+rm(list = ls())
+# install.packages(c("ggplot2", "plotly", "stringi"),dep=TRUE )
+library(plotly)
+library(stargazer)
+library(reticulate)
+# reticulate::py_config()
+use_python("/Users/andrerodrigues/opt/anaconda3/bin/python") # Digite "which python" no seu terminal para determinar o caminho do python no seu computador
+
+
+```
+
+
+## SOM Analysis
+
+* O SOM foi inspirado no modo pelo qual informa????es sensoriais s??o mapeadas no c??rtex cerebral. SOM e um algoritmo n??o supervisionado que aproxima a densidade de probabilidade dos dados de entrada ao mesmo tempo em que reduz a dimensionalidade, tentando preservar ao m??ximo as rela????es topol??gicas entre os dados.
+
+* Vantagens:
+
+  + N??o h?? necessidade da defini????o do n??mero m??nimo de clusters;
+
+  + Realiza a redu????o da dimensionalidade do conjunto de dados ao passo que tamb??m facilita a clusteriza????o.
+
+* Desvantagens:
+
+  + Necessidade de definir a melhor topologia e taxa de aprendizagem para cada tipo de problema;
+
+  + Suscet??vel a outliers e a aus??ncia de normaliza????o;
+
+  + Pode ter problemas de desempenho para grandes volumes de dados.
+ 
+* Resultado da Clusteriza????o:
+
+![](https://i.ibb.co/CPxxLmp/SOM.png){ width=30% }
+
+
+1. Carrega a biblioteca kohonen:
+```{r}
+# install.packages("kohonen")
+library("kohonen")
+```
+
+
+```{r}
+set.seed(593)
+```
+
+
+2. Carregar o dataset Usuarios-TempoMedioQuantidade
+```{r}
+dados_tm <- read.csv(file = "/Users/andrerodrigues/Google Drive/FIAP-MBA 8IA/006 - Modelos de IA e ML/Trabalho_Final_2/Exercicio8_v2/data_nostd_v2.csv", header = TRUE, sep = ",")
+View(dados_tm)
+```
+
+
+3. Analisando o dataframe
+```{r}
+sum(is.nan(as.matrix(dados_tm)))
+sum(is.na(as.matrix(dados_tm)))
+sum(is.infinite(as.matrix(dados_tm)))
+ncol(dados_tm)
+nrow(dados_tm)
+```
+
+
+4. Faz a escala e normaliza????o dos dados do dataset Usuarios-TempoMedioQuantidade:
+```{r}
+#Media da coluna - valor do atributo dividido pelo desvio padr??o da coluna
+dados_tm.scale <- scale(subset(dados_tm, select = c(2:11)))
+View(dados_tm.scale)
+ncol(dados_tm.scale)
+nrow(dados_tm.scale)
+```
+
+
+5. Faz o setup da grade de vizinhanca da rede SOM:
+```{r}
+df.grid = somgrid(xdim = 10, ydim=10, topo="hexagonal")
+```
+
+
+6. Constroi o modelo de rede com os dados do dataset Usuarios-TempoMedioQuantidade , a grade de vizinhanca, numero de iteraces de treinamento e taxa de aprendizado:
+```{r}
+df.som = som(dados_tm.scale, grid=df.grid, rlen=500, alpha=c(0.05,0.01))
+View(df.som)
+```
+
+
+```{r}
+plot(df.som, type="changes")
+```
+
+
+7. Exibe a quantidade de amostras mapeadas por neuronio:
+```{r}
+plot(df.som, type="count") #Apenas visualiza os neronios com mais dados proximos. Nao e o mapa de calor ainda.
+```
+
+
+8. Exibe a medias dos atributos mapeados por neuronio:
+```{r}
+plot(df.som, type="codes") # Essa visualizacao ?? muito importante porque 
+# mostra as caracteristicas principais que exercem poder de separaca?o (no caso do iris isso seia a sepal.width).
+# Mostra tambem quais sao as caracteristicas que menos variam e que, portanto, deveriam ser desprezadas.
+```
+
+
+9. Exibe a relacao de vizinhanca em distancia, algo muito semelhante a matriz U:
+```{r}
+plot(df.som, type="dist.neighbours")
+```
+
+
+
+10. Faz uma clusterizaco hierarquica, dos dados ja clusterizados, apenas para facilitar a exibicao:
+```{r}
+groups = 5
+df.hc = cutree(hclust(dist(df.som$codes[[1]][,1:10])), groups)
+```
+
+13. Adiciona a fronteira de cada cluster:
+```{r}
+plot(df.som, type="dist.neighbours")
+add.cluster.boundaries(df.som, df.hc)
+```
+
+14. Agrupamento
+```{r}
+plot(df.som, type="codes", bgcol=rainbow(groups)[df.hc])
+```
+
+
+```{r}
+View(df.som$codes[[1]])
+```
+
+
+```{r}
+clusterneuronio <-df.hc[df.som$unit.classif]
+```
+
+
+```{r}
+View(clusterneuronio)
+```
+
+
+```{r}
+dados_clust <- read.csv(file = "/Users/andrerodrigues/Google Drive/FIAP-MBA 8IA/006 - Modelos de IA e ML/Trabalho_Final_2/Exercicio8_v2/dados_clust_v2.csv", header = TRUE, sep = ",")
+dados_clust$som <- clusterneuronio
+View(dados_clust)
+write.csv(dados_clust,"/Users/andrerodrigues/Google Drive/FIAP-MBA 8IA/006 - Modelos de IA e ML/Trabalho_Final_2/Exercicio8_v2/dados_clust_v2.csv", row.names=FALSE)
+
+```

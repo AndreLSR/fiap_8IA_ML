@@ -1,0 +1,166 @@
+---
+title: "Modelos de IA e ML"
+author: "Andre L S Rodrigues"
+subtitle: Trabalho 1
+output:
+   html_document:
+      toc: yes
+      theme: cosmo
+      highlight: tango
+      # code_folding: hide
+      fig_width: 12
+      fig_height: 8
+# runtime: shiny
+params:
+  d: !r Sys.Date()
+---
+
+![](https://i.ibb.co/mXvdH3h/Fiap-logo-novo.jpg){ width=20% }
+
+##### Today's date is `r params$d`
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+                      echo = TRUE, 
+                      error = TRUE, 
+                      warning=FALSE, 
+                      message=FALSE
+                      )
+rm(list = ls())
+library(plotly)
+library(stargazer)
+```
+
+
+******
+
+1. Instalar Pacote 
+
+```{r}
+if(!require(arules)) install.packages("arules")
+if(!require(superml)) install.packages("superml")
+```
+
+2. Carregar a biblioteca arules:
+
+```{r}
+library("arules")
+```
+
+
+3.  Carregar o dataset papafresca
+```{r}
+dados <- read.csv(file = "/Users/andrerodrigues/Google Drive/FIAP-MBA 8IA/006 - Modelos de IA e ML/Trabalhos/Trabalho1/data/papafrescaSimNao.csv", header = TRUE, sep = ";")
+View(dados)
+```
+
+
+4. Tratando o dataset:
+```{r}
+ncol(dados)
+str(dados)
+
+cor(x=dados, y=dados$Lapapaengorda, method = c("pearson", "kendall", "spearman"))
+
+
+my_data <- dados
+
+```
+
+
+
+5. Transactions are a very useful tool when dealing with data mining.  It provides a way to mine itemsets or rules on datasets.
+```{r}
+transacoes = as(my_data, "transactions");
+summary (transacoes)
+itemLabels (transacoes)
+```
+
+
+
+6. Encontrar as regras de associacao com a consequencia da regra envolvendo o atributo Lapapaengorda (Sim), lista minima de 2 itens, suporte minimo de 0,01 e confianca de 0.8:
+```{r results = 'hide'}
+regras <- apriori(my_data,parameter = list(minlen=1, supp=0.01, conf=0.7),appearance = list(rhs=c("Lapapaengorda=Nao", "Lapapaengorda=Sim")))
+inspect(regras)
+```
+
+
+
+7. 	Ordenar as regras por confianca:
+```{r results = 'hide'}
+regrasOrdenadas <- sort(regras, by="confidence")
+inspect(regrasOrdenadas)
+```
+
+
+
+8.  Encontra as regras redundantes
+```{r results = 'hide'}
+inspect(regrasOrdenadas[is.redundant(regrasOrdenadas)])
+```
+
+
+
+9. Exclui as Regras redundantes
+```{r results = 'hide'}
+regraslimpas <- regrasOrdenadas[!is.redundant(regrasOrdenadas)]
+inspect(regraslimpas)
+```
+
+
+
+10. Exemplo  encontrar todas ocorrencias de papa engorda sem combinar outro carboidrato:
+```{r}
+regras <- apriori(my_data, control = list(verbose=F),
+                  parameter = list(minlen=3, supp=0.002, conf=0.4),
+                  appearance = list(rhs=c("Lapapaengorda=Sim"),
+                                    lhs=c("SOPAS=Nao", "GRANOS=Nao", "CARNE=Sim", 
+                                          "HUEVOS=Sim", "ARROZ=Nao", "ENSALADA=Sim")))
+
+regrasOrdenadas <- sort(regras, by="confidence")
+inspect(regrasOrdenadas)
+```
+
+
+
+11. Exemplo  encontrar todas ocorrencias de papa engorda com preparos saudaveis:
+```{r}
+regras <- apriori(my_data, control = list(verbose=F),
+                  parameter = list(minlen=2, supp=0.002, conf=0.5),
+                  appearance = list(rhs=c("Lapapaengorda=Sim"),
+                                    lhs=c("Vapor=Sim", "Sopa=Sim", "Pure=Nao",
+                                          "Fritas=Nao", "Sudada=Nao", "Salada=Sim")))
+
+regrasOrdenadas <- sort(regras, by="confidence")
+inspect(regrasOrdenadas)
+```
+
+
+
+12.- Exemplo  encontrar todas ocorrencias de papa engorda com preparos saudaveis sem carboidratos:
+```{r}
+regras <- apriori(my_data, control = list(verbose=F),
+                  parameter = list(minlen=2, supp=0.002, conf=0.6),
+                  appearance = list(rhs=c("Lapapaengorda=Sim"),
+                                    lhs=c("Vapor=Sim", "Sopa=Sim", "Pure=Nao",
+                                          "Fritas=Nao", "Sudada=Nao", "Salada=Sim", 
+                                          "SOPAS=Nao", "GRANOS=Nao", "CARNE=Sim", 
+                                          "HUEVOS=Sim", "ARROZ=Nao", "ENSALADA=Sim")))
+
+regrasOrdenadas <- sort(regras, by="confidence")
+inspect(regrasOrdenadas)
+```
+
+
+*Conclusao: 
+
+O maior indice de confianca obtido para "Lapapaengorda=Sim" nao ultrapassa os 70%. 
+
+*Suporte e Confiança*
+  *- Suporte (support ) e confiança (confidence) são duas medidas de interessabilidade (interestingness ), que refletem respectivamente a utilidade e confiabilidade da regra descoberta.*
+  
+La Papa Engorda
+[Suporte = 0.2%, Confiança = Variando de 40-60%]
+Um suporte de 0.2 para uma regra de associação significa que 2 a cada 1000 transações sob analise mostram que a batata engorda. A confiança de 60% significa que 60% dos individuos engordaram quando combinaram batata com outros alimentos em suas refeicoes. 
+
+

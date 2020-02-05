@@ -1,0 +1,121 @@
+---
+title: "Modelos de IA e ML"
+author: "Andre L S Rodrigues"
+subtitle: Trabalho 7
+output:
+   html_document:
+      toc: yes
+      theme: cosmo
+      highlight: tango
+      # code_folding: hide
+      fig_width: 12
+      fig_height: 8
+runtime: shiny
+params:
+  d: !r Sys.Date()
+---
+
+![](https://i.ibb.co/mXvdH3h/Fiap-logo-novo.jpg){ width=20% }
+
+##### Today's date is `r params$d`
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+                      # fig.width=12, 
+                      # fig.height=8, 
+                      echo = TRUE, 
+                      error = TRUE, 
+                      warning=FALSE, 
+                      message=FALSE
+                      )
+rm(list = ls())
+library(plotly)
+library(stargazer)
+library(dbscan)
+library(factoextra)
+```
+
+
+##Carregar o dataset para DBSCAN
+```{r}
+dados <- scale(read.csv(file = "/Users/andrerodrigues/Google Drive/FIAP-MBA 8IA/006 - Modelos de IA e ML/Trabalhos/Trabalho7/data/ClusterizacaoTrabalho.csv", header = TRUE, sep = ";"))
+# View(dados)
+```
+
+
+##Carrega as bibliotecas fpc e factoextra
+```{r}
+set.seed(123)
+```
+
+##Executa o dbscan com um raio de vizinhança igual a 0.12 e MinPts igual a 11
+
+```{r}
+res <- dbscan(dados, eps = 0.12, MinPts = 11)
+```
+
+
+
+##Utiliza a função fviz_cluster (que faz um PCA internamente) para a visualização dos dados.
+```{r}
+fviz_cluster(res, dados, geom = "point")
+```
+
+
+#Exibe o cluster definido para cada amostra de acordo com seu indice. A amostras cujo o cluster é igual a 0,
+#são considerados outliers
+```{r}
+print(res["cluster"])
+```
+
+```{r}
+library("FactoMineR")
+library("factoextra")
+```
+
+
+## Carregar o dataset para K-Means 
+```{r}
+dados_k <- scale(read.csv(file = "/Users/andrerodrigues/Google Drive/FIAP-MBA 8IA/006 - Modelos de IA e ML/Trabalhos/Trabalho7/data/ClusterizacaoTrabalho.csv", header = TRUE, sep = ";"))
+# View(dados_k)
+```
+
+# Executa o algoritmo k-means:
+```{r}
+kc <- kmeans(dados_k, 15, nstart = 25)
+```
+
+
+# Faz a projeção dos dados utilizando as duas primeira dimensões do PCA
+```{r}
+fviz_cluster(kc, data = dados_k)
+```
+
+
+```{r}
+k.max <- 15
+wss <- sapply(1:k.max, 
+              function(k){kmeans(dados_k, k, nstart=50,iter.max = 15 )$tot.withinss})
+```
+
+
+```{r}
+plot(1:k.max, wss,
+     type="b", pch = 19, frame = FALSE, 
+     xlab="Número de clusters K",
+     ylab="Soma total da diferença dos quadrados internos dos clusters")
+```
+
+<b>Conclusão</b>: Concluimos que a melhor clusterização foi o DBSCAN, pois uma das vantagens dele é a capacidade de trabalhar com outliers, diferente dos outros clusterizadores (AGNES, K-means e SOM).
+Os dados parametrizados para o DBSCAN foram os seguintes:
+*dbscan(dados, eps = 0.12, MinPts = 11)*
+
+
+
+
+
+
+
+
+
+
